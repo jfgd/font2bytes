@@ -4,8 +4,8 @@ from numpy import asarray, ceil, array, sum, concatenate
 filename = 'FontReg36'              #<----- select new font name
 fontname = 'Roboto-Regular.ttf'     #<----- specify the font the you intend to use. Place any font into the fonts folder
 height = 36                     #<----- new font height
-width = 22                       #<----- new fonr width
-THRESHOLD = 190                  #<----- image intensity threshold for binary conversion. It changes the contrast of the final font
+width = 22                       #<----- new font width
+THRESHOLD = 120                  #<----- image intensity threshold for binary conversion. It changes the contrast of the final font
 
 
 font_offset = 4  # recommended to be at least 4
@@ -37,7 +37,7 @@ def convertMap2Hex(binary_map):
         for bit_chunks in range(int(ceil(width/8))):
             tmp = binary_map[line][bit_chunks*8:(min((bit_chunks+1)*8, width))]
             tmp = array(list(map(lambda x: int(x > THRESHOLD), tmp)))
-            tmp = concatenate((array([0] * (8 - len(tmp))), tmp))  # padding with zeros
+            tmp = concatenate((tmp, array([0] * (8 - len(tmp)))))  # padding with zeros
             binary_value = int(sum(tmp * binary_byte))
             hex_map.append(f"{binary_value:#0{4}x}")
 
@@ -95,13 +95,4 @@ if __name__ == "__main__":
             write_letter(hex_map)
 
         write_file_closure(f)
-
-
-
-
-
-
-
-
-
 
