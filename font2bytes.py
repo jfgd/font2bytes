@@ -1,5 +1,5 @@
-from PIL import Image, ImageDraw, ImageFont
-from numpy import asarray, ceil, array, sum, concatenate
+from PIL import Image, ImageDraw, ImageFont, Image
+from numpy import asarray, ceil, array, sum, concatenate, pad
 
 filename = 'FontReg36'              #<----- select new font name
 fontname = 'Roboto-Regular.ttf'     #<----- specify the font the you intend to use. Place any font into the fonts folder
@@ -13,12 +13,17 @@ binary_byte = array([128, 64, 32, 16, 8, 4, 2, 1])
 
 def createTMPimage(ASCII):
 
-    # TODO better center the position of the letter within the image
-
     image = Image.new('RGB', (width, height), color=(0, 0, 0))
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype(f"./fonts/{fontname}", height - font_offset)
-    draw.text((0, 0), chr(ASCII), font=font)
+    if font.getlength(chr(ASCII)) > width:
+        temp_image = Image.new('RGB', (int(font.getlength(chr(ASCII))), height), color=(0, 0, 0))
+        temp_draw = ImageDraw.Draw(temp_image)
+        temp_draw.text((0, 0), chr(ASCII), font=font)
+        squeezed_image = temp_image.resize((width, height), Image.HAMMING)
+        image.paste(squeezed_image, (0, 0))
+    else:
+        draw.text((0, 0), chr(ASCII), font=font)
     image.save(f'./tmp/{ASCII}.bmp')
 
 
@@ -95,4 +100,5 @@ if __name__ == "__main__":
             write_letter(hex_map)
 
         write_file_closure(f)
+
 
