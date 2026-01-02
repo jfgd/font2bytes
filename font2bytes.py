@@ -48,7 +48,7 @@ def write_file_intro(f, height, width):
         "/* Includes ------------------------------------------------------------------*/\n"
     )
     f.write('#include "fonts.h"\n')
-    f.write(f"const uint8_t Font{height}_Table [] = \n")
+    f.write(f"static const uint8_t Font{height}_Table [] = \n")
     f.write("{\n")
 
 
