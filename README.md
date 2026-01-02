@@ -2,6 +2,12 @@
 
 Python script to create new fonts for WaveShare epaper / e-ink [EPS32 module]
 
+
+Acknowledgments
+---------------
+
+Forked from [TheHeXstyle's font2byte](https://github.com/theHEXstyle/font2bytes).
+
 Rational
 -------------------
 
@@ -63,8 +69,10 @@ Just follow the instructions from the 6th step
 
 Author
 -------------------
-TheHeXstyle
+
+ - TheHeXstyle
+ - jfgd
 
 License
 -------------------
-LGPL v3.0, see LICENSE for details.
+GPL v3.0, see LICENSE for details.
