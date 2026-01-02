@@ -7,7 +7,9 @@ from numpy import asarray, ceil, array, sum, concatenate
 binary_byte = array([128, 64, 32, 16, 8, 4, 2, 1])
 
 
-def createTMPimage(font, height, width, ASCII) -> Image.Image:
+def createTMPimage(
+    font: ImageFont.FreeTypeFont, height: int, width: int, ASCII: int
+) -> Image.Image:
     image = Image.new("RGB", (width, height), color=(0, 0, 0))
     draw = ImageDraw.Draw(image)
     if font.getlength(chr(ASCII)) > width:
@@ -23,13 +25,13 @@ def createTMPimage(font, height, width, ASCII) -> Image.Image:
     return image
 
 
-def readImage2Binary(image: Image.Image, ASCII):
+def readImage2Binary(image: Image.Image, ASCII: int):
     data = asarray(image)
     binary_map = data[:, :, 0]
     return binary_map
 
 
-def convertMap2Hex(height, width, threshold, binary_map):
+def convertMap2Hex(height: int, width: int, threshold: int, binary_map) -> list:
     hex_map = []
     for line in range(binary_map.shape[0]):
         for bit_chunks in range(int(ceil(width / 8))):
@@ -42,7 +44,7 @@ def convertMap2Hex(height, width, threshold, binary_map):
     return hex_map
 
 
-def write_file_intro(f, height, width):
+def write_file_intro(f, height: int, width: int) -> None:
     f.write(
         "/* Includes ------------------------------------------------------------------*/\n"
     )
@@ -51,7 +53,7 @@ def write_file_intro(f, height, width):
     f.write("{\n")
 
 
-def write_file_closure(f, font_name, height, width):
+def write_file_closure(f, font_name: str, height: int, width: int):
     f.write("};\n\n")
     f.write(f"sFONT {font_name} = {{\n")
     f.write(f"\tFont{height}_Table,\n")
