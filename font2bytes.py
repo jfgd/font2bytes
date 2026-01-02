@@ -1,21 +1,15 @@
-from PIL import Image, ImageDraw, ImageFont, Image
-from numpy import asarray, ceil, array, sum, concatenate, pad
-
-filename = 'FontReg36'              #<----- select new font name
-fontname = 'Roboto-Regular.ttf'     #<----- specify the font the you intend to use. Place any font into the fonts folder
-height = 36                     #<----- new font height
-width = 22                       #<----- new font width
-THRESHOLD = 120                  #<----- image intensity threshold for binary conversion. It changes the contrast of the final font
+import argparse
+from pathlib import Path
+from PIL import ImageDraw, ImageFont, Image
+from numpy import asarray, ceil, array, sum, concatenate
 
 
-font_offset = 4  # recommended to be at least 4
 binary_byte = array([128, 64, 32, 16, 8, 4, 2, 1])
 
-def createTMPimage(ASCII):
+def createTMPimage(font, height, width, ASCII):
 
     image = Image.new('RGB', (width, height), color=(0, 0, 0))
     draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype(f"./fonts/{fontname}", height - font_offset)
     if font.getlength(chr(ASCII)) > width:
         temp_image = Image.new('RGB', (int(font.getlength(chr(ASCII))), height), color=(0, 0, 0))
         temp_draw = ImageDraw.Draw(temp_image)
@@ -35,13 +29,13 @@ def readImage2Binary(ASCII):
     return binary_map
 
 
-def convertMap2Hex(binary_map):
+def convertMap2Hex(height, width, threshold, binary_map):
 
     hex_map = []
     for line in range(binary_map.shape[0]):
         for bit_chunks in range(int(ceil(width/8))):
             tmp = binary_map[line][bit_chunks*8:(min((bit_chunks+1)*8, width))]
-            tmp = array(list(map(lambda x: int(x > THRESHOLD), tmp)))
+            tmp = array(list(map(lambda x: int(x > threshold), tmp)))
             tmp = concatenate((tmp, array([0] * (8 - len(tmp)))))  # padding with zeros
             binary_value = int(sum(tmp * binary_byte))
             hex_map.append(f"{binary_value:#0{4}x}")
@@ -49,7 +43,7 @@ def convertMap2Hex(binary_map):
     return hex_map
 
 
-def write_file_intro(f):
+def write_file_intro(f, height, width):
 
     f.write('/* Includes ------------------------------------------------------------------*/\n')
     f.write('#include "fonts.h"\n')
@@ -57,7 +51,7 @@ def write_file_intro(f):
     f.write('{\n')
 
 
-def write_file_closure(f):
+def write_file_closure(f, height, width):
 
     f.write('};\n\n')
     f.write(f'sFONT Font{height} = {{\n')
@@ -67,7 +61,7 @@ def write_file_closure(f):
     f.write('};\n\n')
 
 
-def write_letter(hex_map):
+def write_letter(f, height, width, hex_map):
 
     f.write(f'\t// ASCII: {ASCII} "{chr(ASCII)}" ({width} pixels wide)\n')
 
@@ -88,17 +82,43 @@ def write_letter(hex_map):
 
 if __name__ == "__main__":
 
-    with open(f'./output/{filename}.cpp', 'w') as f:
-        write_file_intro(f)
+    parser = argparse.ArgumentParser(
+        prog='font2bytes',
+        description='Generate C/C++ font files for e-Paper '
+        '(WaveShare like) from .ttf files')
+
+    parser.add_argument('-t', '--ttf-input-file', type=Path,
+                        default="./fonts/Roboto-Regular.ttf", help='A .ttf font file')
+    parser.add_argument('-o', '--output-file', type=Path, default='./output/FontReg36.cpp', help='C/C++ output filename')
+
+    parser.add_argument('--height', type=int, default=36, help='Height of the generated font in pixel')
+    parser.add_argument('--width', type=int, default=22, help='Height of the generated font in pixel')
+    parser.add_argument('--threshold', type=int, default=120,
+                        help='Image intensity threshold for binary conversion. '
+                        'It changes the contrast of the final font.')
+    parser.add_argument('--font-offset', type=int, default=4, help='Font offset, recommended to be at least 4.')
+
+    args = parser.parse_args()
+
+    if not args.ttf_input_file.is_file():
+        print(f"File '{args.ttf_input_file}' can not be read")
+        exit(1)
+
+    print(f"Generating {args.output_file} from TTF file {args.ttf_input_file}")
+
+    with open(args.output_file, 'w') as cfile:
+        font = ImageFont.truetype(args.ttf_input_file, args.height - args.font_offset)
+
+        write_file_intro(cfile, args.height, args.width)
 
         for ASCII in range(32, 127):
             print(f'working on ASCII: {ASCII}: {chr(ASCII)}')
 
-            createTMPimage(ASCII)
+            createTMPimage(font, args.height, args.width, ASCII)
             binary_map = readImage2Binary(ASCII)
-            hex_map = convertMap2Hex(binary_map)
-            write_letter(hex_map)
+            hex_map = convertMap2Hex(args.height, args.width, args.threshold, binary_map)
+            write_letter(cfile, args.height, args.width, hex_map)
 
-        write_file_closure(f)
+        write_file_closure(cfile, args.height, args.width)
 
 
