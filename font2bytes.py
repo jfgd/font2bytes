@@ -88,12 +88,19 @@ if __name__ == "__main__":
         default="./fonts/Roboto-Regular.ttf",
         help="A .ttf font file",
     )
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
         "-o",
         "--output-file",
         type=Path,
-        default="./output/FontReg36.cpp",
         help="C/C++ output filename",
+    )
+    group.add_argument(
+        "-d",
+        "--output-dir",
+        type=Path,
+        default="./output/",
+        help="C/C++ output directory. Use --font-name as file name or guess it.",
     )
     parser.add_argument(
         "-n",
@@ -143,11 +150,16 @@ if __name__ == "__main__":
     else:
         font_name = args.font_name
 
+    if args.output_file is not None:
+        output_file = args.output_file
+    else:
+        output_file = args.output_dir / f"{font_name}.c"
+
     print(
-        f"Generating font '{font_name}' in {args.output_file} from TTF file {args.ttf_input_file}"
+        f"Generating font '{font_name}' in {output_file} from TTF file {args.ttf_input_file}"
     )
 
-    with open(args.output_file, "w") as cfile:
+    with open(output_file, "w") as cfile:
         font = ImageFont.truetype(args.ttf_input_file, args.height - args.font_offset)
 
         write_file_intro(cfile)
