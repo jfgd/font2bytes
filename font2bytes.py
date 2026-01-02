@@ -97,7 +97,7 @@ def write_letter(f, height, width, hex_map):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="font2bytes",
-        description="Generate C/C++ font files for e-Paper "
+        description="Generate C font files for e-Paper "
         "(WaveShare like) from .ttf files",
     )
 
@@ -113,14 +113,14 @@ if __name__ == "__main__":
         "-o",
         "--output-file",
         type=Path,
-        help="C/C++ output filename",
+        help="C output filename",
     )
     group.add_argument(
         "-d",
         "--output-dir",
         type=Path,
         default="./output/",
-        help="C/C++ output directory. Use --font-name as file name or guess it.",
+        help="C output directory. Use --font-name as file name or guess it.",
     )
     parser.add_argument(
         "-n",
