@@ -52,9 +52,9 @@ def write_file_intro(f, height, width):
     f.write("{\n")
 
 
-def write_file_closure(f, height, width):
+def write_file_closure(f, font_name, height, width):
     f.write("};\n\n")
-    f.write(f"sFONT Font{height} = {{\n")
+    f.write(f"sFONT {font_name} = {{\n")
     f.write(f"\tFont{height}_Table,\n")
     f.write(f"\t{width}, /* Width */\n")
     f.write(f"\t{height}, /* Height */\n")
@@ -98,7 +98,13 @@ if __name__ == "__main__":
         default="./output/FontReg36.cpp",
         help="C/C++ output filename",
     )
-
+    parser.add_argument(
+        "-n",
+        "--font-name",
+        type=str,
+        help="Name of the sFONT object in the C file. "
+        "If unspecified derive it form input file name.",
+    )
     parser.add_argument(
         "--height", type=int, default=36, help="Height of the generated font in pixel"
     )
@@ -125,7 +131,17 @@ if __name__ == "__main__":
         print(f"File '{args.ttf_input_file}' can not be read")
         exit(1)
 
-    print(f"Generating {args.output_file} from TTF file {args.ttf_input_file}")
+    if args.font_name is None:
+        font_name = "Font" + args.ttf_input_file.stem
+        for i in [" ", "-"]:
+            font_name = font_name.replace(i, "")
+        font_name += f"{args.height}"
+    else:
+        font_name = args.font_name
+
+    print(
+        f"Generating font '{font_name}' in {args.output_file} from TTF file {args.ttf_input_file}"
+    )
 
     with open(args.output_file, "w") as cfile:
         font = ImageFont.truetype(args.ttf_input_file, args.height - args.font_offset)
@@ -142,4 +158,4 @@ if __name__ == "__main__":
             )
             write_letter(cfile, args.height, args.width, hex_map)
 
-        write_file_closure(cfile, args.height, args.width)
+        write_file_closure(cfile, font_name, args.height, args.width)
