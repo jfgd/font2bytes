@@ -132,7 +132,8 @@ def main():
         "--height", type=int, default=36, help="Height of the generated font in pixel"
     )
     parser.add_argument(
-        "--width", type=int, default=22, help="Height of the generated font in pixel"
+        "--width", type=int, help="Width of the generated font in pixel. "
+        "Defaults to 3/5 of --height."
     )
     parser.add_argument(
         "--threshold",
@@ -184,6 +185,11 @@ def main():
     else:
         output_file = args.output_dir / f"{font_name}.c"
 
+    if args.width is None:
+        width = round((args.height * 3) / 5)
+    else:
+        width = args.width
+
     print(
         f"Generating font '{font_name}' in {output_file} from TTF file {args.ttf_input_file}"
     )
@@ -197,16 +203,16 @@ def main():
         for ASCII in range(32, 127):
             print(chr(ASCII), end="")
 
-            image = createTMPimage(font, args.height, args.width, ASCII)
+            image = createTMPimage(font, args.height, width, ASCII)
             if args.bmp_dir is not None:
                 image.save(args.bmp_dir / f"{ASCII}.bmp")
             binary_map = readImage2Binary(image, ASCII)
             hex_map = convertMap2Hex(
-                args.height, args.width, args.threshold, binary_map
+                args.height, width, args.threshold, binary_map
             )
-            write_letter(cfile, ASCII, args.height, args.width, hex_map)
+            write_letter(cfile, ASCII, args.height, width, hex_map)
 
-        write_file_closure(cfile, font_name, args.height, args.width)
+        write_file_closure(cfile, font_name, args.height, width)
         print()
 
 if __name__ == "__main__":
