@@ -27,25 +27,23 @@ from numpy import asarray, ceil, array, sum, concatenate
 def createTMPimage(
     font: ImageFont.FreeTypeFont, height: int, width: int, ASCII: int
 ) -> Image.Image:
-    image = Image.new("RGB", (width, height), color=(0, 0, 0))
+    image = Image.new("L", (width, height), color=(0))
     draw = ImageDraw.Draw(image)
     if font.getlength(chr(ASCII)) > width:
         temp_image = Image.new(
-            "RGB", (int(font.getlength(chr(ASCII))), height), color=(0, 0, 0)
+            "L", (int(font.getlength(chr(ASCII))), height), color=(0)
         )
         temp_draw = ImageDraw.Draw(temp_image)
-        temp_draw.text((0, 0), chr(ASCII), font=font)
+        temp_draw.text((0, 0), chr(ASCII), fill=255, font=font)
         squeezed_image = temp_image.resize((width, height), Image.Resampling.HAMMING)
         image.paste(squeezed_image, (0, 0))
     else:
-        draw.text((0, 0), chr(ASCII), font=font)
+        draw.text((0, 0), chr(ASCII), fill=255, font=font)
     return image
 
 
 def readImage2Binary(image: Image.Image, ASCII: int):
-    data = asarray(image)
-    binary_map = data[:, :, 0]
-    return binary_map
+    return asarray(image)
 
 
 def convertMap2Hex(height: int, width: int, threshold: int, binary_map) -> list:
