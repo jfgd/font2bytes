@@ -78,7 +78,7 @@ def write_file_closure(f, font_name: str, height: int, width: int):
     f.write("};\n\n")
 
 
-def write_letter(f, height, width, hex_map):
+def write_letter(f, ASCII, height, width, hex_map):
     f.write(f'\t// ASCII: {ASCII} "{chr(ASCII)}" ({width} pixels wide)\n')
 
     count = 0
@@ -94,9 +94,10 @@ def write_letter(f, height, width, hex_map):
     f.write("\n")
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(
         prog="font2bytes",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Generate C font files for e-Paper "
         "(WaveShare like) from .ttf files",
     )
@@ -205,7 +206,10 @@ if __name__ == "__main__":
             hex_map = convertMap2Hex(
                 args.height, args.width, args.threshold, binary_map
             )
-            write_letter(cfile, args.height, args.width, hex_map)
+            write_letter(cfile, ASCII, args.height, args.width, hex_map)
 
         write_file_closure(cfile, font_name, args.height, args.width)
         print()
+
+if __name__ == "__main__":
+    main()
