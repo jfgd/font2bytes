@@ -142,6 +142,16 @@ if __name__ == "__main__":
         print(f"File '{args.ttf_input_file}' can not be read")
         exit(1)
 
+    if args.bmp_dir is not None:
+        if not args.bmp_dir.is_dir():
+            print(f"Directory '{args.bmp_dir}' does not exist")
+            exit(1)
+
+    if args.output_dir is not None:
+        if not args.output_dir.is_dir():
+            print(f"Directory '{args.output_dir}' does not exist")
+            exit(1)
+
     if args.font_name is None:
         font_name = "Font" + args.ttf_input_file.stem
         for i in [" ", "-"]:
