@@ -7,7 +7,7 @@ from numpy import asarray, ceil, array, sum, concatenate
 binary_byte = array([128, 64, 32, 16, 8, 4, 2, 1])
 
 
-def createTMPimage(font, height, width, ASCII):
+def createTMPimage(font, height, width, ASCII) -> Image.Image:
     image = Image.new("RGB", (width, height), color=(0, 0, 0))
     draw = ImageDraw.Draw(image)
     if font.getlength(chr(ASCII)) > width:
@@ -16,15 +16,14 @@ def createTMPimage(font, height, width, ASCII):
         )
         temp_draw = ImageDraw.Draw(temp_image)
         temp_draw.text((0, 0), chr(ASCII), font=font)
-        squeezed_image = temp_image.resize((width, height), Image.HAMMING)
+        squeezed_image = temp_image.resize((width, height), Image.Resampling.HAMMING)
         image.paste(squeezed_image, (0, 0))
     else:
         draw.text((0, 0), chr(ASCII), font=font)
-    image.save(f"./tmp/{ASCII}.bmp")
+    return image
 
 
-def readImage2Binary(ASCII):
-    image = Image.open(f"./tmp/{ASCII}.bmp")
+def readImage2Binary(image: Image.Image, ASCII):
     data = asarray(image)
     binary_map = data[:, :, 0]
     return binary_map
@@ -124,6 +123,13 @@ if __name__ == "__main__":
         default=4,
         help="Font offset, recommended to be at least 4.",
     )
+    parser.add_argument(
+        "-b",
+        "--bmp-dir",
+        type=Path,
+        help="Folder to save BMP intermediate image, if unspecified "
+        "BMP image are not saved. Useful for debugging.",
+    )
 
     args = parser.parse_args()
 
@@ -151,8 +157,10 @@ if __name__ == "__main__":
         for ASCII in range(32, 127):
             print(f"working on ASCII: {ASCII}: {chr(ASCII)}")
 
-            createTMPimage(font, args.height, args.width, ASCII)
-            binary_map = readImage2Binary(ASCII)
+            image = createTMPimage(font, args.height, args.width, ASCII)
+            if args.bmp_dir is not None:
+                image.save(args.bmp_dir / f"{ASCII}.bmp")
+            binary_map = readImage2Binary(image, ASCII)
             hex_map = convertMap2Hex(
                 args.height, args.width, args.threshold, binary_map
             )
