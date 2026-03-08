@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#==========================================================================
+# ==========================================================================
 # Copyright (c) theHEXstyle, 2023-2024
 # Copyright (c) jfgd, 2026
 #
@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see
 # <https://www.gnu.org/licenses/>.
-#==========================================================================
+# ==========================================================================
 
 import argparse
 from pathlib import Path
@@ -132,8 +132,23 @@ def main():
         "--height", type=int, default=36, help="Height of the generated font in pixel"
     )
     parser.add_argument(
-        "--width", type=int, help="Width of the generated font in pixel. "
-        "Defaults to 3/5 of --height."
+        "--width",
+        type=int,
+        help="Width of the generated font in pixel. Defaults to 3/5 of --height.",
+    )
+    parser.add_argument(
+        "-s",
+        "--ascii-start",
+        type=int,
+        default=32,
+        help="Decimal ASCII value (included) from which to start generating character",
+    )
+    parser.add_argument(
+        "-e",
+        "--ascii-end",
+        type=int,
+        default=126,
+        help="Decimal ASCII value (included) at which characters stop being generated",
     )
     parser.add_argument(
         "--threshold",
@@ -190,6 +205,13 @@ def main():
     else:
         width = args.width
 
+    if args.ascii_end < args.ascii_start:
+        print(
+            f"ASCII end value ({args.ascii_end}) must be bigger "
+            f"than ASCII start value ({args.ascii_start})"
+        )
+        exit(1)
+
     print(
         f"Generating font '{font_name}' in {output_file} from TTF file {args.ttf_input_file}"
     )
@@ -199,21 +221,20 @@ def main():
 
         write_file_intro(cfile)
 
-        print("Generating:", end="")
-        for ASCII in range(32, 127):
-            print(chr(ASCII), end="")
+        print("Generating: ", end="")
+        for ASCII in range(args.ascii_start, args.ascii_end + 1):
+            print(f"{chr(ASCII)}({ASCII}) ", end="")
 
             image = createTMPimage(font, args.height, width, ASCII)
             if args.bmp_dir is not None:
                 image.save(args.bmp_dir / f"{ASCII}.bmp")
             binary_map = readImage2Binary(image, ASCII)
-            hex_map = convertMap2Hex(
-                args.height, width, args.threshold, binary_map
-            )
+            hex_map = convertMap2Hex(args.height, width, args.threshold, binary_map)
             write_letter(cfile, ASCII, args.height, width, hex_map)
 
         write_file_closure(cfile, font_name, args.height, width)
         print()
+
 
 if __name__ == "__main__":
     main()
