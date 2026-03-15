@@ -19,6 +19,7 @@
 # ==========================================================================
 
 import argparse
+import re
 from pathlib import Path
 from PIL import ImageDraw, ImageFont, Image
 from numpy import asarray, ceil, array, sum, concatenate
@@ -107,14 +108,14 @@ def main():
         default="./fonts/Roboto-Regular.ttf",
         help="A .ttf font file",
     )
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
+    group_out = parser.add_mutually_exclusive_group()
+    group_out.add_argument(
         "-o",
         "--output-file",
         type=Path,
         help="C output filename",
     )
-    group.add_argument(
+    group_out.add_argument(
         "-d",
         "--output-dir",
         type=Path,
@@ -127,6 +128,14 @@ def main():
         type=str,
         help="Name of the sFONT object in the C file. "
         "If unspecified derive it form input file name.",
+    )
+    parser.add_argument(
+        "--format-font",
+        "-f",
+        type=str,
+        choices=["sFONT", "jFont"],
+        default="sFONT",
+        help="Output format font, sFONT ou jFont"
     )
     parser.add_argument(
         "--height", type=int, default=36, help="Height of the generated font in pixel"
@@ -143,12 +152,19 @@ def main():
         default=32,
         help="Decimal ASCII value (included) from which to start generating character",
     )
-    parser.add_argument(
+    group_range = parser.add_mutually_exclusive_group()
+    group_range.add_argument(
         "-e",
         "--ascii-end",
         type=int,
         default=126,
         help="Decimal ASCII value (included) at which characters stop being generated",
+    )
+    group_range.add_argument(
+        "-r",
+        "--ascii-range",
+        type=str,
+        help="Comma separate list of ascii number to generate",
     )
     parser.add_argument(
         "--threshold",
@@ -187,6 +203,10 @@ def main():
             print(f"Directory '{args.output_dir}' does not exist")
             exit(1)
 
+    if args.ascii_range is not None and args.format_font != "jFont":
+        print("Argument --ascii-range only valid with 'jFont' format")
+        exit(1)
+
     if args.font_name is None:
         font_name = "Font" + args.ttf_input_file.stem
         for i in [" ", "-"]:
@@ -212,6 +232,21 @@ def main():
         )
         exit(1)
 
+    ranges = [[ args.ascii_start, args.ascii_end]]
+
+    if args.ascii_range is not None:
+        args.ascii_range = [s.strip() for s in args.ascii_range.split(",")]
+        ranges = []
+        for r in args.ascii_range:
+            x = re.findall(r"\d+", str(r))
+            if len(x) == 1:
+                ranges.append([int(x[0]), int(x[0])])
+            elif len(x) == 2:
+                ranges.append([int(x[0]), int(x[1])])
+            else:
+                print(f"Range '{r}' not understood")
+                exit(1)
+
     print(
         f"Generating font '{font_name}' in {output_file} from TTF file {args.ttf_input_file}"
     )
@@ -219,18 +254,19 @@ def main():
     with open(output_file, "w") as cfile:
         font = ImageFont.truetype(args.ttf_input_file, args.height - args.font_offset)
 
-        write_file_intro(cfile)
+        write_file_intro(cfile, args.format_font)
 
         print("Generating: ", end="")
-        for ASCII in range(args.ascii_start, args.ascii_end + 1):
-            print(f"{chr(ASCII)}({ASCII}) ", end="")
+        for r in ranges:
+            for ASCII in range(r[0], r[1] + 1):
+                print(f"{chr(ASCII)}({ASCII}) ", end="")
 
-            image = createTMPimage(font, args.height, width, ASCII)
-            if args.bmp_dir is not None:
-                image.save(args.bmp_dir / f"{ASCII}.bmp")
-            binary_map = readImage2Binary(image, ASCII)
-            hex_map = convertMap2Hex(args.height, width, args.threshold, binary_map)
-            write_letter(cfile, ASCII, args.height, width, hex_map)
+                image = createTMPimage(font, args.height, width, ASCII)
+                if args.bmp_dir is not None:
+                    image.save(args.bmp_dir / f"{ASCII}.bmp")
+                binary_map = readImage2Binary(image, ASCII)
+                hex_map = convertMap2Hex(args.height, width, args.threshold, binary_map)
+                write_letter(cfile, ASCII, args.height, width, hex_map)
 
         write_file_closure(cfile, font_name, args.height, width)
         print()
