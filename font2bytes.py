@@ -26,8 +26,17 @@ from numpy import asarray, ceil, array, sum, concatenate
 
 
 def createTMPimage(
-    font: ImageFont.FreeTypeFont, height: int, width: int, ASCII: int
+    font: ImageFont.FreeTypeFont,
+    height: int,
+    width: int,
+    ASCII: int,
+    variable_width: bool,
+    max_width: int,
 ) -> Image.Image:
+    if variable_width:
+        width = round(font.getlength(chr(ASCII)))
+        if max_width:
+            width = min(width, max_width)
     image = Image.new("L", (width, height), color=(0))
     draw = ImageDraw.Draw(image)
     if font.getlength(chr(ASCII)) > width:
@@ -40,7 +49,7 @@ def createTMPimage(
         image.paste(squeezed_image, (0, 0))
     else:
         draw.text((0, 0), chr(ASCII), fill=255, font=font)
-    return image
+    return image, width
 
 
 def readImage2Binary(image: Image.Image, ASCII: int):
@@ -72,11 +81,11 @@ def write_file_intro(f, ffmt) -> None:
 
 
 def write_file_closure(
-    f, ffmt, font_name: str, height: int, width: int, char_list: list
+    f, ffmt, font_name: str, height: int, width_table: dict, char_list: list
 ):
     if ffmt == "jFont":
         f.write(f"jFont {font_name} = {{\n")
-        f.write(f"\t.max_width = {width}, /* Maximum width */\n")
+        f.write(f"\t.max_width = {max(width_table.values())}, /* Maximum width */\n")
         f.write(f"\t.height = {height}, /* Height */\n")
         f.write(
             f"\t.default_char = {char_list[0]}, /* Default: '{chr(char_list[0])}' */\n"
@@ -88,7 +97,7 @@ def write_file_closure(
         for c in char_list:
             f.write("\t\t{\n")
             f.write(f"\t\t\t.c = {c}, /* '{chr(c)}' */\n")
-            f.write(f"\t\t\t.width = {width},\n")
+            f.write(f"\t\t\t.width = {width_table[c]},\n")
             f.write(f"\t\t\t.table = fontTable{c},\n")
             f.write("\t\t},\n")
         f.write("\t}\n")
@@ -97,7 +106,7 @@ def write_file_closure(
         f.write("};\n\n")
         f.write(f"sFONT {font_name} = {{\n")
         f.write("\tFont_Table,\n")
-        f.write(f"\t{width}, /* Width */\n")
+        f.write(f"\t{width_table[c]}, /* Width */\n")
         f.write(f"\t{height}, /* Height */\n")
         f.write("};\n\n")
 
@@ -171,10 +180,23 @@ def main():
     parser.add_argument(
         "--height", type=int, default=36, help="Height of the generated font in pixel"
     )
-    parser.add_argument(
+    group_width = parser.add_mutually_exclusive_group()
+    group_width.add_argument(
         "--width",
         type=int,
         help="Width of the generated font in pixel. Defaults to 3/5 of --height.",
+    )
+    group_width.add_argument(
+        "--max-width",
+        type=int,
+        help="Maximum width of the generated font in pixel. "
+        "Defaults to 3/5 of --height.",
+    )
+    group_width.add_argument(
+        "--variable-width",
+        action="store_true",
+        default=False,
+        help="Character width is variable",
     )
     parser.add_argument(
         "-s",
@@ -238,6 +260,14 @@ def main():
         print("Argument --ascii-range only valid with 'jFont' format")
         exit(1)
 
+    if args.max_width is not None and args.format_font != "jFont":
+        print("Argument --max-width only valid with 'jFont' format")
+        exit(1)
+
+    if args.variable_width is not False and args.format_font != "jFont":
+        print("Argument --variable-width only valid with 'jFont' format")
+        exit(1)
+
     if args.font_name is None:
         font_name = "Font" + args.ttf_input_file.stem
         for i in [" ", "-"]:
@@ -293,22 +323,28 @@ def main():
 
         write_file_intro(cfile, args.format_font)
 
+        width_table = {}
         print("Generating: ", end="")
         for r in ranges:
             for ASCII in range(r[0], r[1] + 1):
                 print(f"{chr(ASCII)}({ASCII}) ", end="")
 
-                image = createTMPimage(font, args.height, width, ASCII)
+                image, char_width = createTMPimage(
+                    font, args.height, width, ASCII, args.variable_width, args.max_width
+                )
+                width_table[ASCII] = char_width
                 if args.bmp_dir is not None:
                     image.save(args.bmp_dir / f"{ASCII}.bmp")
                 binary_map = readImage2Binary(image, ASCII)
-                hex_map = convertMap2Hex(args.height, width, args.threshold, binary_map)
+                hex_map = convertMap2Hex(
+                    args.height, char_width, args.threshold, binary_map
+                )
                 write_letter(
-                    cfile, args.format_font, ASCII, args.height, width, hex_map
+                    cfile, args.format_font, ASCII, args.height, char_width, hex_map
                 )
 
         write_file_closure(
-            cfile, args.format_font, font_name, args.height, width, char_list
+            cfile, args.format_font, font_name, args.height, width_table, char_list
         )
         print()
 
