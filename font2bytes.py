@@ -32,6 +32,8 @@ def createTMPimage(
     ASCII: int,
     variable_width: bool,
     max_width: int,
+    x_offset: int,
+    y_offset: int,
 ) -> Image.Image:
     if variable_width:
         width = round(font.getlength(chr(ASCII)))
@@ -44,11 +46,13 @@ def createTMPimage(
             "L", (int(font.getlength(chr(ASCII))), height), color=(0)
         )
         temp_draw = ImageDraw.Draw(temp_image)
-        temp_draw.text((0, 0), chr(ASCII), fill=255, font=font)
+        temp_draw.text(
+            (x_offset, y_offset), chr(ASCII), fill=255, font=font, anchor="la"
+        )
         squeezed_image = temp_image.resize((width, height), Image.Resampling.HAMMING)
         image.paste(squeezed_image, (0, 0))
     else:
-        draw.text((0, 0), chr(ASCII), fill=255, font=font)
+        draw.text((x_offset, y_offset), chr(ASCII), fill=255, font=font, anchor="la")
     return image, width
 
 
@@ -239,6 +243,18 @@ def main():
         help="Folder to save BMP intermediate image, if unspecified "
         "BMP image are not saved. Useful for debugging.",
     )
+    parser.add_argument(
+        "--y-offset",
+        type=int,
+        default=0,
+        help="Y offset when drawing character",
+    )
+    parser.add_argument(
+        "--x-offset",
+        type=int,
+        default=0,
+        help="X offset when drawing character",
+    )
 
     args = parser.parse_args()
 
@@ -330,7 +346,14 @@ def main():
                 print(f"{chr(ASCII)}({ASCII}) ", end="")
 
                 image, char_width = createTMPimage(
-                    font, args.height, width, ASCII, args.variable_width, args.max_width
+                    font,
+                    args.height,
+                    width,
+                    ASCII,
+                    args.variable_width,
+                    args.max_width,
+                    args.x_offset,
+                    args.y_offset,
                 )
                 width_table[ASCII] = char_width
                 if args.bmp_dir is not None:
