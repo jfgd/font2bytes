@@ -34,9 +34,10 @@ def createTMPimage(
     max_width: int,
     x_offset: int,
     y_offset: int,
+    extend_width: int,
 ) -> Image.Image:
     if variable_width:
-        width = round(font.getlength(chr(ASCII)))
+        width = round(font.getlength(chr(ASCII))) + extend_width
         if max_width:
             width = min(width, max_width)
     image = Image.new("L", (width, height), color=(0))
@@ -203,6 +204,12 @@ def main():
         help="Character width is variable",
     )
     parser.add_argument(
+        "--extend-width",
+        type=int,
+        default=0,
+        help="Extend width by X pixel, can only be used with --variable-width",
+    )
+    parser.add_argument(
         "-s",
         "--ascii-start",
         type=int,
@@ -284,6 +291,10 @@ def main():
         print("Argument --variable-width only valid with 'jFont' format")
         exit(1)
 
+    if args.variable_width is False and args.extend_width != 0:
+        print("Argument --extend-width can only be used with --variable-width")
+        exit(1)
+
     if args.font_name is None:
         font_name = "Font" + args.ttf_input_file.stem
         for i in [" ", "-"]:
@@ -354,6 +365,7 @@ def main():
                     args.max_width,
                     args.x_offset,
                     args.y_offset,
+                    args.extend_width,
                 )
                 width_table[ASCII] = char_width
                 if args.bmp_dir is not None:
