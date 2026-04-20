@@ -142,7 +142,7 @@ def write_file_closure(
         f.write("};\n\n")
         f.write(f"sFONT {font_name} = {{\n")
         f.write("\tFont_Table,\n")
-        f.write(f"\t{width_table[c]}, /* Width */\n")
+        f.write(f"\t{width_table[char_list[0]]}, /* Width */\n")
         f.write(f"\t{height}, /* Height */\n")
         f.write("};\n\n")
 
