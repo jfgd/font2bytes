@@ -36,6 +36,8 @@ def createTMPimage(
     x_offset: int,
     y_offset: int,
     extend_width: int,
+    cut_bottom: int = 0,
+    cut_right: int = 0,
 ) -> Image.Image:
     if variable_width:
         width = round(font.getlength(chr(ASCII))) + extend_width
@@ -55,7 +57,8 @@ def createTMPimage(
         image.paste(squeezed_image, (0, 0))
     else:
         draw.text((x_offset, y_offset), chr(ASCII), fill=255, font=font, anchor="la")
-    return image, width
+    image = image.crop((0, 0, width - cut_right, height - cut_bottom))
+    return image, width - cut_right
 
 
 def readImage2Binary(image: Image.Image, ASCII: int):
@@ -293,6 +296,18 @@ def main():
         default=0,
         help="X offset when drawing character",
     )
+    parser.add_argument(
+        "--cut-bottom",
+        type=int,
+        default=0,
+        help="cut X pixel on the bottom of each character",
+    )
+    parser.add_argument(
+        "--cut-right",
+        type=int,
+        default=0,
+        help="cut X pixel on the right of each character",
+    )
 
     args = parser.parse_args()
 
@@ -397,20 +412,35 @@ def main():
                     args.x_offset,
                     args.y_offset,
                     args.extend_width,
+                    args.cut_bottom,
+                    args.cut_right,
                 )
                 width_table[ASCII] = char_width
                 if args.bmp_dir is not None:
                     image.save(args.bmp_dir / f"{ASCII}.bmp")
                 binary_map = readImage2Binary(image, ASCII)
                 hex_map = convertMap2Hex(
-                    args.height, char_width, args.threshold, binary_map
+                    args.height - args.cut_bottom,
+                    char_width,
+                    args.threshold,
+                    binary_map,
                 )
                 write_letter(
-                    cfile, args.format_font, ASCII, args.height, char_width, hex_map
+                    cfile,
+                    args.format_font,
+                    ASCII,
+                    args.height - args.cut_bottom,
+                    char_width,
+                    hex_map,
                 )
 
         write_file_closure(
-            cfile, args.format_font, font_name, args.height, width_table, char_list
+            cfile,
+            args.format_font,
+            font_name,
+            args.height - args.cut_bottom,
+            width_table,
+            char_list,
         )
         print()
 
